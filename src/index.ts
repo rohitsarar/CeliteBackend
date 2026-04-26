@@ -1,4 +1,4 @@
-import { AppDataSource } from "./data.source";
+import { AppDataSource } from "./data-source";
 import * as dotenv from 'dotenv';
 import logger from "./utils/winston";
 import express, { Express, Request, Response } from 'express';

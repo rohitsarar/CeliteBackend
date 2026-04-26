@@ -3,6 +3,7 @@ import { DataSource } from "typeorm"
 import path from 'path';
 import * as dotenv from 'dotenv';
 import mysql from "mysql2";
+import { User } from "./features/user/user.model";
 
 // Load the .env file
 dotenv.config();
@@ -22,7 +23,7 @@ export const AppDataSource = new DataSource({
     database: process.env.DB_NAME || 'osm',
     synchronize: false,
     logging: false,
-    entities: [],
+    entities: [User],
     migrationsTableName: "migration_table",
     migrations: [migrationLocation],
     subscribers: [],

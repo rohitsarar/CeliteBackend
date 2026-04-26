@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import { Router } from 'express';
+import user from './user/user.route';
 
 const router = Router();
 dotenv.config();
@@ -12,6 +13,10 @@ interface IRoutes {
 }
 
 const productionRoutes: IRoutes[] = [
+     {
+        path: '/user',
+        route: user
+    },
  
 ];
 

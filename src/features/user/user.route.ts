@@ -1,7 +1,6 @@
 import { Router } from "express";
 import UserController from "./user.controller";
 
-
 const router = Router();
 
 /**
@@ -10,6 +9,6 @@ const router = Router();
  * @description Get all users
  */
 
-router.get('/', UserController.postUsersDetails);
+router.post("/post-user-details", UserController.postUsersDetails);
 
 export default router;

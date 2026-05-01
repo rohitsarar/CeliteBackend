@@ -1,7 +1,8 @@
-import { Request, Response, NextFunction } from "express";
-import postUserSchema from "./user.validator";
-import UserRepository from "./user.utils";
+import { NextFunction, Request, Response } from "express";
 import sendSuccessResponse from "../../middleware/success.handle";
+import { sendUserEmail } from "../../utils/sendEmail";
+import UserRepository from "./user.utils";
+import postUserSchema from "./user.validator";
 
 export default class UserController {
   public static async postUsersDetails(
@@ -19,7 +20,7 @@ export default class UserController {
         email,
         contactNumber,
       );
-
+      await sendUserEmail(userDetails);
       sendSuccessResponse(req, res, {
         userDetails,
         message: "User Details saved successfully",

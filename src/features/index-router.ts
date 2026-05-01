@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import { Router } from "express";
 import user from "./user/user.route";
+import tyreroute from "./TyreDetails/tyre_details.route";
 
 const router = Router();
 dotenv.config();
@@ -16,6 +17,11 @@ const productionRoutes: IRoutes[] = [
   {
     path: "/api/user",
     route: user,
+  },
+
+  {
+    path: "/api/tyres",
+    route: tyreroute,
   },
 ];
 

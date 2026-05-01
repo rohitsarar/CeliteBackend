@@ -5,7 +5,7 @@ const router = Router();
 
 /**
  * @GET
- * @route /v1/users
+ * @route api/v1/users
  * @description Get all users
  */
 

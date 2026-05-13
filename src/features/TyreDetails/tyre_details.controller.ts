@@ -2,10 +2,10 @@ import { Request, Response, NextFunction } from "express";
 import {
   addNameSchema,
   AddtyreCardImagesSchema,
+  GettyreCardImagesSchema,
 } from "./tyre_details.validator";
 import TyreDetailsRepository from "./tyre_details.utiils";
 import sendSuccessResponse from "../../middleware/success.handle";
-import { send } from "node:process";
 import { uploadBufferToCloudinary } from "../../service/cloudinary.service";
 
 /** Converts "Apollo Tyres" → "apollo_tyres" (safe for Cloudinary paths). */
@@ -18,21 +18,6 @@ function slugify(value: string): string {
 }
 
 export default class TyreController {
-  static async addName(req: Request, res: Response, next: NextFunction) {
-    try {
-      const { TyreType, name } = await addNameSchema.validateAsync(req.body);
-
-      const result = await TyreDetailsRepository.create(TyreType, name);
-
-      sendSuccessResponse(req, res, {
-        message: `${TyreType} added successfully`,
-        result,
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-
   static async addTyreCardImageWithName(
     req: Request,
     res: Response,
@@ -100,6 +85,36 @@ export default class TyreController {
           },
         },
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  //get all manufacturers api
+  static async getManufacturers(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const data = await TyreDetailsRepository.getManufacturers();
+      sendSuccessResponse(req, res, {
+        message: "Manufacturers retrieved successfully",
+        data,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getTyreCardImages(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { manufacturerName, modelName, size } =
+        await GettyreCardImagesSchema.validateAsync(req.query);
     } catch (error) {
       next(error);
     }

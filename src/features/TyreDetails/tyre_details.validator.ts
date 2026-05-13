@@ -12,3 +12,10 @@ export const AddtyreCardImagesSchema = Joi.object({
   size: Joi.string().required(),
   // imageUrl: Joi.string().uri().required(),
 });
+
+export const GettyreCardImagesSchema = Joi.object({
+  manufacturerName: Joi.string().optional(),
+  modelName: Joi.string().optional(),
+  size: Joi.string().optional(),
+  // imageUrl: Joi.string().uri().required(),
+});

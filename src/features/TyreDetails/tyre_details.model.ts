@@ -1,11 +1,4 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-  Index,
-} from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
 
 //Tyre Details Table combining all the details
 @Entity({ name: "tyre_details" })
@@ -13,14 +6,14 @@ export class TyreDetails {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column({ name: "manufacturer_id" })
-  manufacturerId!: number;
+  @Column({ name: "manufacturer_name" })
+  manufacturerName!: string;
 
-  @Column({ name: "model_id" })
-  modelId!: number;
+  @Column({ name: "model_name" })
+  modelName!: string;
 
-  @Column({ name: "brand_id" })
-  brandId!: number;
+  @Column({ name: "brand_name", type: "varchar", nullable: true })
+  brandName!: string;
 
   @Column({ name: "size", type: "varchar", length: 50 })
   size!: string;

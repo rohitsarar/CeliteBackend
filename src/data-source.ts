@@ -4,9 +4,7 @@ import path from "path";
 import * as dotenv from "dotenv";
 import mysql from "mysql2";
 import { User } from "./features/user/user.model";
-import { Manufacturer } from "./features/TyreDetails/manufacture.model";
-import { Brand } from "./features/TyreDetails/brand.model";
-import { Model } from "./features/TyreDetails/model.model";
+
 import { TyreDetails } from "./features/TyreDetails/tyre_details.model";
 
 // Load the .env file
@@ -27,7 +25,7 @@ export const AppDataSource = new DataSource({
   database: process.env.DB_NAME || "osm",
   synchronize: false,
   logging: false,
-  entities: [User, Manufacturer, Brand, Model, TyreDetails],
+  entities: [User, TyreDetails],
   migrationsTableName: "migration_table",
   migrations: [migrationLocation],
   subscribers: [],

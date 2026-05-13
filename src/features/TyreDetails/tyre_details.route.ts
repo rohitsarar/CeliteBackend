@@ -18,4 +18,9 @@ route.post(
   TyreController.addTyreCardImageWithName, // ② business logic
 );
 
+route.get(
+  "/manufacturers",
+  TyreController.getManufacturers // ② business logic
+);
+
 export default route;

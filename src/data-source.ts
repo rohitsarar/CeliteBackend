@@ -1,11 +1,10 @@
-import "reflect-metadata";
-import { DataSource } from "typeorm";
-import path from "path";
 import * as dotenv from "dotenv";
 import mysql from "mysql2";
-import { User } from "./features/user/user.model";
-
+import path from "path";
+import "reflect-metadata";
+import { DataSource } from "typeorm";
 import { TyreDetails } from "./features/TyreDetails/tyre_details.model";
+import { User } from "./features/user/user.model";
 
 // Load the .env file
 dotenv.config();

@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import {
   addNameSchema,
-  AddtyreCardImagesSchema,
+  AddtyreAndGetCardImagesSchema,
+  getSizeSchema,
   GettyreCardImagesSchema,
 } from "./tyre_details.validator";
 import TyreDetailsRepository from "./tyre_details.utiils";
@@ -34,7 +35,7 @@ export default class TyreController {
       }
 
       const { manufacturerName, brandName, modelName, size } =
-        await AddtyreCardImagesSchema.validateAsync(req.body, {
+        await AddtyreAndGetCardImagesSchema.validateAsync(req.body, {
           abortEarly: false, // collect ALL validation errors at once
           stripUnknown: true,
         });
@@ -100,6 +101,42 @@ export default class TyreController {
       const data = await TyreDetailsRepository.getManufacturers();
       sendSuccessResponse(req, res, {
         message: "Manufacturers retrieved successfully",
+        data,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  //get all modelNames api
+  static async getModelNames(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const {manufacturerName} = await AddtyreAndGetCardImagesSchema.validateAsync(req.query);
+      const data = await TyreDetailsRepository.getModelNames(manufacturerName);
+      sendSuccessResponse(req, res, {
+        message: "Model names retrieved successfully",
+        data,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  //get all size api
+  static async getSize(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const {manufacturerName,modelName} = await getSizeSchema.validateAsync(req.query);
+      const data = await TyreDetailsRepository.getSize(manufacturerName,modelName);
+      sendSuccessResponse(req, res, {
+        message: "Sizes retrieved successfully",
         data,
       });
     } catch (error) {

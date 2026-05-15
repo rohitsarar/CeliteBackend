@@ -5,12 +5,17 @@ export const addNameSchema = Joi.object({
   name: Joi.string().trim().min(2).required(),
 });
 
-export const AddtyreCardImagesSchema = Joi.object({
+export const AddtyreAndGetCardImagesSchema = Joi.object({
   manufacturerName: Joi.string().required(),
-  brandName: Joi.string().required(),
-  modelName: Joi.string().required(),
-  size: Joi.string().required(),
+  brandName: Joi.string().optional(),
+  modelName: Joi.string().optional(),
+  size: Joi.string().optional(),
   // imageUrl: Joi.string().uri().required(),
+});
+
+export const getSizeSchema = Joi.object({
+  manufacturerName: Joi.string().required(),
+  modelName: Joi.string().required(),
 });
 
 export const GettyreCardImagesSchema = Joi.object({

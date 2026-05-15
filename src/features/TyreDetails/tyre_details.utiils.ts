@@ -31,6 +31,28 @@ export default class TyreDetailsRepository {
       .orderBy("td.manufacturer_name", "ASC")
       .getRawMany();
 
-    return manufacturers.map((item) => item.manufacturer_name);
+    return manufacturers.map((m) => m.manufacturer_name);
+  }
+
+  static async getModelNames(manufacturerName: string) {
+    const modelNames = await tyreDetailsRepository
+      .createQueryBuilder("td")
+      .select("DISTINCT td.model_name", "model_name")
+       .where("td.manufacturer_name = :manufacturerName", { manufacturerName })
+      .orderBy("td.model_name", "ASC")
+      .getRawMany();
+
+    return modelNames.map((m) => m.model_name);
+  }
+  
+  static async getSize(manufacturerName: string, modelName: string) {
+    const sizes = await tyreDetailsRepository
+      .createQueryBuilder("td")
+      .select("DISTINCT td.size", "size")
+       .where("td.manufacturer_name = :manufacturerName AND td.model_name = :modelName", { manufacturerName, modelName })
+      .orderBy("td.size", "ASC")
+      .getRawMany();
+
+    return sizes.map((s) => s.size);
   }
 }

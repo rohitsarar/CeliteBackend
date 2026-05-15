@@ -19,8 +19,18 @@ route.post(
 );
 
 route.get(
-  "/manufacturers",
+  "/get-manufacturers",
   TyreController.getManufacturers // ② business logic
+);
+
+route.get(
+  "/get-models",
+  TyreController.getModelNames // ② business logic
+);
+
+route.get(
+  "/get-sizes",
+  TyreController.getSize // ② business logic
 );
 
 export default route;

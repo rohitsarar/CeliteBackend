@@ -13,24 +13,35 @@ const route = Router();
  *   TyreController.addTyreCardImage  →  uploads to Cloudinary, saves URL to DB
  */
 route.post(
-  "/card-image",
+  "/all-fields-card-image",
   uploadSingle, // ① parse & validate the upload
-  TyreController.addTyreCardImageWithName, // ② business logic
+  TyreController.addTyreCardImageWithAllFields, // ② business logic
+);
+
+route.post(
+  "/add-image-in-cloudinary",
+  uploadSingle, // ① parse & validate the upload
+  TyreController.addImageInCloudinary, // ② business logic
+);
+
+route.get(
+  "/get-card-images-details",
+  TyreController.getTyreCardImagesWithFilters, // ② business logic
 );
 
 route.get(
   "/get-manufacturers",
-  TyreController.getManufacturers // ② business logic
+  TyreController.getManufacturers, // ② business logic
 );
 
 route.get(
   "/get-models",
-  TyreController.getModelNames // ② business logic
+  TyreController.getModelNames, // ② business logic
 );
 
 route.get(
   "/get-sizes",
-  TyreController.getSize // ② business logic
+  TyreController.getSize, // ② business logic
 );
 
 export default route;

@@ -23,6 +23,61 @@ export default class TyreDetailsRepository {
     return await tyreDetailsRepository.save(tyre);
   };
 
+  static async findId(
+    manufacturerName: string,
+    // brandName: string,
+    modelName: string,
+    size: string,
+  ) {
+    const tyre = await tyreDetailsRepository.findOne({
+      where: {
+        manufacturerName,
+        // brandName,
+        modelName,
+        size,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    return tyre?.id || null;
+  }
+
+  static async addImageUrlInDatabase(id: number, imageUrl: string) {
+    const updateResult = await tyreDetailsRepository.update(id, {
+      imageUrl,
+    });
+
+    return updateResult.affected ? updateResult.affected > 0 : false;
+  }
+
+  static async getTyreCardImage(
+    manufacturerName?: string,
+    modelName?: string,
+    size?: string,
+  ) {
+    const queryBuilder = tyreDetailsRepository.createQueryBuilder("td");
+
+    if (manufacturerName) {
+      queryBuilder.andWhere("td.manufacturer_name = :manufacturerName", {
+        manufacturerName,
+      });
+    }
+
+    if (modelName) {
+      queryBuilder.andWhere("td.model_name = :modelName", { modelName });
+    }
+
+    if (size) {
+      queryBuilder.andWhere("td.size = :size", { size });
+    }
+
+    const result = await queryBuilder.getMany();
+
+    return result;
+  }
+
   // ✅ Get Manufacturers
   static async getManufacturers() {
     const manufacturers = await tyreDetailsRepository
@@ -38,18 +93,21 @@ export default class TyreDetailsRepository {
     const modelNames = await tyreDetailsRepository
       .createQueryBuilder("td")
       .select("DISTINCT td.model_name", "model_name")
-       .where("td.manufacturer_name = :manufacturerName", { manufacturerName })
+      .where("td.manufacturer_name = :manufacturerName", { manufacturerName })
       .orderBy("td.model_name", "ASC")
       .getRawMany();
 
     return modelNames.map((m) => m.model_name);
   }
-  
+
   static async getSize(manufacturerName: string, modelName: string) {
     const sizes = await tyreDetailsRepository
       .createQueryBuilder("td")
       .select("DISTINCT td.size", "size")
-       .where("td.manufacturer_name = :manufacturerName AND td.model_name = :modelName", { manufacturerName, modelName })
+      .where(
+        "td.manufacturer_name = :manufacturerName AND td.model_name = :modelName",
+        { manufacturerName, modelName },
+      )
       .orderBy("td.size", "ASC")
       .getRawMany();
 

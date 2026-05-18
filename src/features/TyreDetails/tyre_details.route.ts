@@ -44,4 +44,9 @@ route.get(
   TyreController.getSize, // ② business logic
 );
 
+route.get(
+  "/get-brands",
+  TyreController.getbrandNames, // ② business logic
+);
+
 export default route;

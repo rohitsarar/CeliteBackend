@@ -15,7 +15,7 @@ const fileExtension = path.extname(currentFilename);
 const migrationLocation = fileExtension === ".ts" ? "./src/migration/*.ts" : "";
 
 // rohit db
-// export const AppDataSource1 = new DataSource({
+// export const AppDataSource = new DataSource({
 //   type: "mysql",
 //   driver: mysql,
 //   host: process.env.DB_HOST || "localhost",
@@ -31,21 +31,19 @@ const migrationLocation = fileExtension === ".ts" ? "./src/migration/*.ts" : "";
 //   subscribers: [],
 // });
 
-
 // nishu db
 export const AppDataSource = new DataSource({
-    type: "mysql",
-    driver: mysql,
-    host: process.env.DB_HOST || 'localhost',
-    port: Number(process.env.DB_PORT) || 3306,
-    username: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || 'P@ssw0rd',
-    database: process.env.DB_NAME || 'celiteTyreDB',
-    synchronize: false,
-    logging: false,
-    entities: [User,TyreDetails],
-    migrationsTableName: "migration_table",
-    migrations: [migrationLocation],
-    subscribers: [],
+  type: "mysql",
+  driver: mysql,
+  host: process.env.DB_HOST || "localhost",
+  port: Number(process.env.DB_PORT) || 3306,
+  username: process.env.DB_USER || "root",
+  password: process.env.DB_PASSWORD || "P@ssw0rd",
+  database: process.env.DB_NAME || "celiteTyreDB",
+  synchronize: false,
+  logging: false,
+  entities: [User, TyreDetails],
+  migrationsTableName: "migration_table",
+  migrations: [migrationLocation],
+  subscribers: [],
 });
-

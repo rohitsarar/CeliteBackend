@@ -93,7 +93,7 @@ export default class TyreController {
     }
   }
 
-  //add image in cloudinary and save url in database
+  
   // add image in cloudinary and save url in database
   static async addImageInCloudinary(
     req: Request,

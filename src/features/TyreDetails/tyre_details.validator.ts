@@ -18,6 +18,10 @@ export const getSizeSchema = Joi.object({
   modelName: Joi.string().required(),
 });
 
+export const getbrandNamesSchema = Joi.object({
+  manufacturerName: Joi.string().optional(),
+});
+
 export const GettyreCardImagesSchema = Joi.object({
   manufacturerName: Joi.string().optional(),
   modelName: Joi.string().optional(),

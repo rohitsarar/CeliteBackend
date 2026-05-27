@@ -33,3 +33,10 @@ coverage/
 # Temporary files
 tmp/
 temp/
+
+# TypeORM migrations
+src/migrations/
+
+# or specific files
+src/migrations/*.ts
+src/migrations/*.js

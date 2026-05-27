@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import {
   addNameSchema,
   AddtyreAndGetCardImagesSchema,
+  getbrandNamesSchema,
   getSizeSchema,
   GettyreCardImagesSchema,
 } from "./tyre_details.validator";
@@ -220,6 +221,21 @@ export default class TyreController {
       );
       sendSuccessResponse(req, res, {
         message: "Sizes retrieved successfully",
+        data,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getbrandNames(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { manufacturerName } = await getbrandNamesSchema.validateAsync(
+        req.query,
+      );
+      const data = await TyreDetailsRepository.getbrandNames(manufacturerName);
+      sendSuccessResponse(req, res, {
+        message: "Brand names retrieved successfully",
         data,
       });
     } catch (error) {

@@ -113,4 +113,20 @@ export default class TyreDetailsRepository {
 
     return sizes.map((s) => s.size);
   }
+
+  static async getbrandNames(manufacturerName?: string) {
+    const queryBuilder = tyreDetailsRepository
+      .createQueryBuilder("td")
+      .select("DISTINCT td.brand_name", "brand_name");
+
+    if (manufacturerName) {
+      queryBuilder.where("td.manufacturer_name = :manufacturerName", {
+        manufacturerName,
+      });
+    }
+
+    const brands = await queryBuilder.getRawMany();
+
+    return brands.map((b) => b.brand_name);
+  }
 }

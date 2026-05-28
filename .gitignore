@@ -36,7 +36,10 @@ temp/
 
 # TypeORM migrations
 src/migrations/
+src/migration/
 
 # or specific files
 src/migrations/*.ts
 src/migrations/*.js
+src/migration/*.ts
+src/migration/*.js

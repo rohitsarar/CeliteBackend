@@ -1,5 +1,6 @@
 import { AppDataSource } from "../../data-source";
 import { TyreDetails } from "./tyre_details.model";
+import { sendCustomerInquiryEmailToAdmin } from "../../service/email/email.service";
 
 const tyreDetailsRepository = AppDataSource.getRepository(TyreDetails);
 
@@ -128,5 +129,16 @@ export default class TyreDetailsRepository {
     const brands = await queryBuilder.getRawMany();
 
     return brands.map((b) => b.brand_name);
+  }
+
+  //  Send Customer Inquiry Email to Admin
+  static async sendEmailToAdmin(contactNo: string): Promise<boolean> {
+    try {
+      const emailSent = await sendCustomerInquiryEmailToAdmin(contactNo);
+      return emailSent;
+    } catch (error) {
+      console.error("Error in sendEmailToAdmin:", error);
+      return false;
+    }
   }
 }

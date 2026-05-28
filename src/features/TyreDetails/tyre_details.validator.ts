@@ -28,3 +28,14 @@ export const GettyreCardImagesSchema = Joi.object({
   size: Joi.string().optional(),
   // imageUrl: Joi.string().uri().required(),
 });
+
+export const postEmailToAdminSchema = Joi.object({
+  contactNo: Joi.string()
+    .trim()
+    .required()
+    .pattern(/^[0-9\s\-\+\(\)]{7,}$/)
+    .messages({
+      'string.pattern.base': 'Invalid phone number format. Please provide a valid contact number.',
+      'any.required': 'Contact number is required.',
+    }),
+});

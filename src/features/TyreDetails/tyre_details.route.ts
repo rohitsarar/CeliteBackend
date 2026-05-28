@@ -49,4 +49,10 @@ route.get(
   TyreController.getbrandNames, // ② business logic
 );
 
+// Customer inquiry email endpoint
+route.post(
+  "/customer-inquiry",
+  TyreController.postUserDetailsToAdminEmail, // send customer contact to admin
+);
+
 export default route;

@@ -5,6 +5,7 @@ import {
   getbrandNamesSchema,
   getSizeSchema,
   GettyreCardImagesSchema,
+  postEmailToAdminSchema,
 } from "./tyre_details.validator";
 import TyreDetailsRepository from "./tyre_details.utiils";
 import sendSuccessResponse, {
@@ -265,6 +266,45 @@ export default class TyreController {
       });
     } catch (error) {
       next(error);
+    }
+  }
+
+
+
+  static async postUserDetailsToAdminEmail(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { contactNo } = await postEmailToAdminSchema.validateAsync(
+        req.body,
+        {
+          abortEarly: false,
+          stripUnknown: true,
+        },
+      );
+
+      // Send email to admin with customer contact details
+      const emailSent = await TyreDetailsRepository.sendEmailToAdmin(contactNo);
+
+      if (!emailSent) {
+        return sendErrorResponse(req, res, {
+          message:
+            "Failed to send inquiry. Please try again later or contact support.",
+        });
+      }
+
+      sendSuccessResponse(req, res, {
+        message:
+          "Thank you for providing your contact details! Our team will reach out to you shortly.",
+        data: {
+          status: "submitted",
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } catch (err) {
+      next(err);
     }
   }
 }

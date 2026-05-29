@@ -57,6 +57,8 @@ export default class TyreDetailsRepository {
     manufacturerName?: string,
     modelName?: string,
     size?: string,
+    brandName?: string,
+    category?: string,
   ) {
     const queryBuilder = tyreDetailsRepository.createQueryBuilder("td");
 
@@ -72,6 +74,13 @@ export default class TyreDetailsRepository {
 
     if (size) {
       queryBuilder.andWhere("td.size = :size", { size });
+    }
+    if (brandName) {
+      queryBuilder.andWhere("td.brand_name = :brandName", { brandName });
+    }
+
+    if (category) {
+      queryBuilder.andWhere("td.category = :category", { category });
     }
 
     const result = await queryBuilder.getMany();

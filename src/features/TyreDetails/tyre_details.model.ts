@@ -18,8 +18,8 @@ export class TyreDetails {
   @Column({ name: "size", type: "varchar" })
   size!: string;
 
-  @Column({ name: "type", type: "varchar", length: 50 })
-  type!: string;
+  @Column({ name: "category", type: "varchar", length: 50 })
+  category!: string;
 
   @Column({ name: "image_url", type: "text", nullable: true })
   imageUrl!: string;

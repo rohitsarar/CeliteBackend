@@ -95,7 +95,6 @@ export default class TyreController {
     }
   }
 
-  
   // add image in cloudinary and save url in database
   static async addImageInCloudinary(
     req: Request,
@@ -250,7 +249,7 @@ export default class TyreController {
     next: NextFunction,
   ) {
     try {
-      const { manufacturerName, modelName, size } =
+      const { manufacturerName, modelName, size, brandName, category } =
         await GettyreCardImagesSchema.validateAsync(req.query, {
           abortEarly: false,
           stripUnknown: true,
@@ -259,6 +258,8 @@ export default class TyreController {
         manufacturerName,
         modelName,
         size,
+        brandName,
+        category,
       );
       sendSuccessResponse(req, res, {
         message: "Tyre card image retrieved successfully",
@@ -268,8 +269,6 @@ export default class TyreController {
       next(error);
     }
   }
-
-
 
   static async postUserDetailsToAdminEmail(
     req: Request,

@@ -60,6 +60,7 @@ export default class TyreDetailsRepository {
     brandName?: string,
     category?: string,
   ) {
+    console.log("category in repo:", category);
     const queryBuilder = tyreDetailsRepository.createQueryBuilder("td");
 
     if (manufacturerName) {

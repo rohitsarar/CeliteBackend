@@ -254,6 +254,7 @@ export default class TyreController {
           abortEarly: false,
           stripUnknown: true,
         });
+
       const data = await TyreDetailsRepository.getTyreCardImage(
         manufacturerName,
         modelName,
@@ -261,6 +262,7 @@ export default class TyreController {
         brandName,
         category,
       );
+
       sendSuccessResponse(req, res, {
         message: "Tyre card image retrieved successfully",
         data,

@@ -1,88 +1,100 @@
-import { NextFunction, Request, Response } from 'express';
-import Joi from 'joi';
-import { QueryFailedError } from 'typeorm';
-import logger from '../utils/winston';
-import ApiError from '../utils/api-error';
-import { IApiErrors } from '../types/error';
+import { NextFunction, Request, Response } from "express";
+import Joi from "joi";
+import multer from "multer";
+import { QueryFailedError } from "typeorm";
+import logger from "../utils/winston";
+import ApiError from "../utils/api-error";
+import { IApiErrors } from "../types/error";
 
-function errorHandlingMiddleWare(err: unknown, req: Request, res: Response, next: NextFunction) {
+type DriverError = { code?: string; sqlMessage?: string };
 
-    // logger here 
+function errorHandlingMiddleWare(
+  err: unknown,
+  _req: Request,
+  res: Response,
+  // Express identifies error middleware by arity, so the 4th param must stay.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _next: NextFunction,
+) {
+  // Known, expected errors (validation, auth, not found) are logged at warn
+  // level; anything else is a real error and gets the full stack.
+  const isExpected =
+    err instanceof ApiError ||
+    err instanceof Joi.ValidationError ||
+    err instanceof multer.MulterError;
+  if (isExpected) {
+    logger.warn(err instanceof Error ? err.message : String(err));
+  } else {
     logger.error(err);
+  }
 
-    // API Error
-    if (err instanceof ApiError) {
-        return res.status(err.code).json({ status: err.code, data: null, error: err.message });
+  // Application errors
+  if (err instanceof ApiError) {
+    return res
+      .status(err.code)
+      .json({ status: err.code, data: null, error: err.message });
+  }
+
+  // Joi validation errors
+  if (err instanceof Joi.ValidationError) {
+    const errors = err.details.map((e) => ({
+      label: e.path[0],
+      msg: e.message,
+    }));
+    return res.status(422).json({
+      status: 422,
+      data: null,
+      error: { message: "Validation Error", errors },
+    });
+  }
+
+  // Multer (file upload) errors
+  if (err instanceof multer.MulterError) {
+    const code = err.code === "LIMIT_FILE_SIZE" ? 413 : 400;
+    return res.status(code).json({ status: code, data: null, error: err.message });
+  }
+
+  // Unsupported file type thrown by our multer fileFilter
+  if (err instanceof Error && err.message.startsWith("Unsupported file type")) {
+    return res.status(415).json({ status: 415, data: null, error: err.message });
+  }
+
+  // ORM errors
+  if (err instanceof QueryFailedError) {
+    const driverError = err.driverError as DriverError;
+
+    if (driverError.code === "ER_DUP_ENTRY") {
+      return res
+        .status(409)
+        .json({ status: 409, data: null, error: IApiErrors.DUPLICATE_ENTRY });
     }
 
-    // JOI Error
-    if (err instanceof Joi.ValidationError) {
-
-        type Obj = {
-            label: string | number,
-            msg: string
-        };
-        const error: Array<Obj> = [];
-        err.details.forEach((e) => {
-            const data = {
-                label: e.path[0],
-                msg: e.message,
-            };
-            error.push(data);
-        });
-        return res.status(422).json({ status: 422, data: null, error: { message: 'Validation Error', errors: error } });
+    if (driverError.code === "ER_NO_DEFAULT_FOR_FIELD") {
+      return res
+        .status(400)
+        .json({ status: 400, data: null, error: "Missing fields in request" });
     }
+  }
 
-    // ORM errors
-    if (err instanceof QueryFailedError) {
-        // Check if duplicate error
-        if (err.driverError.code === 'ER_DUP_ENTRY') {
-            return res.status(400).json({ status: 400, error: 'Duplicate Entry', data: null });
-        }
-
-        if (err.driverError.code === 'ER_NO_DEFAULT_FOR_FIELD') {
-            return res.status(400).json({ status: 400, error: 'Missing Fields in Request', data: null });
-        }
+  // body-parser errors
+  if (typeof err === "object" && err !== null && "type" in err) {
+    const { type } = err as { type: string };
+    if (type === "entity.too.large") {
+      return res
+        .status(413)
+        .json({ status: 413, data: null, error: IApiErrors.PAYLOAD_TOO_LARGE });
     }
-
-    // keycloak errors
-    //   if (err instanceof AxiosError) {
-    //     const url = new URL(`${err.config?.url}`);
-    //     /*
-    //       Check the NODE Env if it is using production keycloak or development keycloak
-    //     */
-    //     let domain: string;
-    //     if (process.env.NODE_ENV === 'development') {
-    //       domain = `${url.protocol}//${url.hostname}:${url.port}`;
-    //     } else {
-    //       domain = `${url.protocol}//${url.hostname}`;
-    //     }
-
-    //     if (domain === process.env.KEYCLOAK_URL) {
-    //       const code = err.response?.status;
-    //       if (code !== undefined) {
-    //         if (code === 400 || code === 401 || code === 403 || code === 404 || code === 405
-    //           || code === 415 || code === 422 || code === 409) {
-    //           return res.status(code).json({ status: code, error: KeycloakErrors.get(code), data: null });
-    //         }
-    //       }
-    //     }
-    //   }
-
-    // multer errors
-    // if (err instanceof multer.MulterError) {
-    //     return res.status(500).json({ status: err.code, error: err.message, data: null });
-    // }
-
-    if (typeof err === 'object' && err !== null && 'type' in err) {
-        const error = err as { type: string }; // Narrow down the type to an object with a `type` property
-        if (error.type === 'entity.too.large') {
-            res.status(413).json({ status: 413, error: 'Payload too large' })
-            return;
-        }
+    if (type === "entity.parse.failed") {
+      return res
+        .status(400)
+        .json({ status: 400, data: null, error: "Malformed JSON body" });
     }
+  }
 
-    // Send Internal Sever Error
-    return res.status(500).json({ status: 500, error: IApiErrors.INTERNAL_SERVER_ERROR });
+  // Anything else: never leak internals to the client
+  return res
+    .status(500)
+    .json({ status: 500, data: null, error: IApiErrors.INTERNAL_SERVER_ERROR });
 }
+
 export default errorHandlingMiddleWare;

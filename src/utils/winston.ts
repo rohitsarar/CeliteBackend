@@ -1,69 +1,61 @@
-import winston from 'winston';
-import * as dotenv from 'dotenv';
+import fs from "fs";
+import path from "path";
+import winston from "winston";
+import * as dotenv from "dotenv";
 
 dotenv.config();
 
-// Log Levels
-const levels = {
-  error: 0,
-  warn: 1,
-  info: 2, // Adjust ed the level order to match the common sequence
-  http: 3,
-  debug: 4,
-};
+/** Where log files live. Override with LOG_DIR=/var/log/celite in production. */
+export const LOG_DIR = process.env.LOG_DIR || path.join(process.cwd(), "logs");
+fs.mkdirSync(LOG_DIR, { recursive: true });
 
-// Specify according to environment
-const level = () => {
-  const env = process.env.NODE_ENV || 'development';
-  const isDevelopment = env === 'development';
-  return isDevelopment ? 'debug' : 'debug';
-};
+const levels = { error: 0, warn: 1, info: 2, http: 3, debug: 4 };
 
-// Colors for logging
-const colors = {
-  error: 'red',
-  warn: 'yellow',
-  info: 'green',
-  http: 'magenta',
-  debug: 'white',
-};
+const isProduction = process.env.NODE_ENV === "production";
 
-// Adding colors
-winston.addColors(colors);
+// Verbose locally, quieter in production (override with LOG_LEVEL).
+const level = () => process.env.LOG_LEVEL || (isProduction ? "info" : "debug");
 
-// Creating Custom Format without colorization
+winston.addColors({
+  error: "red",
+  warn: "yellow",
+  info: "green",
+  http: "magenta",
+  debug: "white",
+});
+
 const baseFormat = winston.format.combine(
-  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
-  winston.format.printf(
-    (info) => `${info.timestamp} ${info.level}: ${info.message}\n`
-      + `${info.stack ? info.stack : ''}` // Include stack trace if available
-      + `${info.metadata ? JSON.stringify(info.metadata, null, 2) : ''}`, // Include metadata if available
-  ),
-);
-
-// Creating Custom Format with colorization
-const colorizedFormat = winston.format.combine(
-  winston.format.colorize({ all: true }),
-  baseFormat,
-);
-
-// Determine the format to use based on environment
-const format = process.env.NODE_ENV !== 'production' ? colorizedFormat : baseFormat;
-
-// Transports
-const transports = [
-  new winston.transports.Console(), // Logging to Console
-  // Logging error logs
-  new winston.transports.File({
-    filename: 'logs/error.log',
-    level: 'error',
+  winston.format.errors({ stack: true }),
+  winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss.SSS" }),
+  winston.format.printf((info) => {
+    const stack = info.stack ? `\n${info.stack}` : "";
+    return `${info.timestamp} ${info.level}: ${info.message}${stack}`;
   }),
+);
 
-  // Logging all logs
-  new winston.transports.File({ filename: 'logs/all.log' }),
+const format = isProduction
+  ? baseFormat
+  : winston.format.combine(winston.format.colorize({ all: true }), baseFormat);
+
+const fileOptions = {
+  maxsize: 10 * 1024 * 1024, // rotate at 10 MB
+  maxFiles: 5,
+  tailable: true,
+};
+
+const transports = [
+  new winston.transports.Console(),
+  new winston.transports.File({
+    filename: path.join(LOG_DIR, "error.log"),
+    level: "error",
+    ...fileOptions,
+  }),
+  new winston.transports.File({
+    filename: path.join(LOG_DIR, "all.log"),
+    ...fileOptions,
+  }),
 ];
 
-// Logger Initialize
 const logger: winston.Logger = winston.createLogger({
   level: level(),
   levels,
@@ -71,5 +63,4 @@ const logger: winston.Logger = winston.createLogger({
   transports,
 });
 
-// Exporting Logs
 export default logger;

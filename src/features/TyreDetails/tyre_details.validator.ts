@@ -1,44 +1,95 @@
 import Joi from "joi";
-import { join } from "path/win32";
 
-export const addNameSchema = Joi.object({
-  TyreType: Joi.string().valid("manufacturer", "brand", "model").required(),
-  name: Joi.string().trim().min(2).required(),
-});
+/** Categories the storefront filters by. Keep in sync with the frontend. */
+export const TYRE_CATEGORIES = [
+  "PESSENGER_CAR",
+  "TWO",
+  "FARM",
+  "TRUCKS",
+  "OTR",
+  "SCV",
+  "PICKUP",
+  "THREE_WHEELER",
+  "ICV",
+  "OTHERS",
+] as const;
 
-export const AddtyreAndGetCardImagesSchema = Joi.object({
-  manufacturerName: Joi.string().required(),
-  brandName: Joi.string().optional(),
-  modelName: Joi.string().optional(),
-  size: Joi.string().optional(),
-  // imageUrl: Joi.string().uri().required(),
-});
+const name = Joi.string().trim().min(1).max(100);
+const phone = Joi.string()
+  .trim()
+  .pattern(/^[0-9\s\-+()]{7,20}$/)
+  .messages({
+    "string.pattern.base":
+      "Invalid phone number format. Please provide a valid contact number.",
+  });
 
-export const getSizeSchema = Joi.object({
-  manufacturerName: Joi.string().required(),
-  modelName: Joi.string().required(),
-});
-
-export const getbrandNamesSchema = Joi.object({
-  manufacturerName: Joi.string().optional(),
-});
-
-export const GettyreCardImagesSchema = Joi.object({
-  manufacturerName: Joi.string().optional(),
-  modelName: Joi.string().optional(),
-  size: Joi.string().optional(),
-  category: Joi.string().optional(),
-  // imageUrl: Joi.string().uri().required(),
-});
-
-export const postEmailToAdminSchema = Joi.object({
-  contactNo: Joi.string()
+/** POST /tyres/all-fields-card-image — create a tyre row with its image. */
+export const createTyreWithImageSchema = Joi.object({
+  manufacturerName: name.required(),
+  modelName: name.required(),
+  size: name.required(),
+  brandName: name.allow("", null).optional(),
+  category: Joi.string()
     .trim()
-    .required()
-    .pattern(/^[0-9\s\-\+\(\)]{7,}$/)
-    .messages({
-      "string.pattern.base":
-        "Invalid phone number format. Please provide a valid contact number.",
-      "any.required": "Contact number is required.",
-    }),
+    .uppercase()
+    .valid(...TYRE_CATEGORIES)
+    .default("OTHERS"),
 });
+
+/** POST /tyres/add-image-in-cloudinary — attach an image to an existing row. */
+export const attachImageSchema = Joi.object({
+  manufacturerName: name.required(),
+  modelName: name.required(),
+  size: name.required(),
+});
+
+/** GET /tyres/get-models?manufacturerName= */
+export const getModelsSchema = Joi.object({
+  manufacturerName: name.required(),
+});
+
+/** GET /tyres/get-sizes?manufacturerName=&modelName= */
+export const getSizeSchema = Joi.object({
+  manufacturerName: name.required(),
+  modelName: name.required(),
+});
+
+/** GET /tyres/get-brands?manufacturerName= */
+export const getbrandNamesSchema = Joi.object({
+  manufacturerName: name.optional(),
+});
+
+/** GET /tyres/get-card-images-details — all filters optional. */
+export const GettyreCardImagesSchema = Joi.object({
+  manufacturerName: name.optional(),
+  modelName: name.optional(),
+  size: name.optional(),
+  brandName: name.optional(),
+  category: Joi.string().trim().uppercase().optional(),
+  limit: Joi.number().integer().min(1).max(200).default(200),
+  offset: Joi.number().integer().min(0).default(0),
+});
+
+/**
+ * POST /tyres/customer-inquiry
+ * Only contactNo is required; the other fields let the contact form and the
+ * product page send richer leads through the same endpoint.
+ */
+export const postEmailToAdminSchema = Joi.object({
+  contactNo: phone.required().messages({
+    "any.required": "Contact number is required.",
+    "string.empty": "Contact number is required.",
+  }),
+  fullName: Joi.string().trim().max(100).allow("").optional(),
+  email: Joi.string().trim().email().max(150).allow("").optional(),
+  tyre: Joi.string().trim().max(200).allow("").optional(),
+  message: Joi.string().trim().max(2000).allow("").optional(),
+});
+
+export type CustomerInquiry = {
+  contactNo: string;
+  fullName?: string;
+  email?: string;
+  tyre?: string;
+  message?: string;
+};

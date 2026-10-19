@@ -1,153 +1,148 @@
 import { AppDataSource } from "../../data-source";
 import { TyreDetails } from "./tyre_details.model";
 import { sendCustomerInquiryEmailToAdmin } from "../../service/email/email.service";
+import logger from "../../utils/winston";
+import { CustomerInquiry } from "./tyre_details.validator";
 
 const tyreDetailsRepository = AppDataSource.getRepository(TyreDetails);
 
+export type CreateTyreInput = {
+  manufacturerName: string;
+  modelName: string;
+  size: string;
+  category: string;
+  brandName?: string | null;
+  imageUrl?: string | null;
+};
+
+export type TyreFilters = {
+  manufacturerName?: string;
+  modelName?: string;
+  size?: string;
+  brandName?: string;
+  category?: string;
+  limit?: number;
+  offset?: number;
+};
+
 export default class TyreDetailsRepository {
-  // ✅ Create Tyre
-  static createTyreCardImageWithName = async (
-    manufacturerName: string,
-    brandName: string,
-    modelName: string,
-    size: string,
-    imageUrl: string,
-  ) => {
+  static async createTyreCardImageWithName(input: CreateTyreInput) {
     const tyre = tyreDetailsRepository.create({
-      manufacturerName,
-      brandName,
-      modelName,
-      size,
-      imageUrl,
+      manufacturerName: input.manufacturerName,
+      modelName: input.modelName,
+      size: input.size,
+      category: input.category,
+      brandName: input.brandName ?? undefined,
+      imageUrl: input.imageUrl ?? undefined,
     });
 
-    return await tyreDetailsRepository.save(tyre);
-  };
+    return tyreDetailsRepository.save(tyre);
+  }
 
-  static async findId(
-    manufacturerName: string,
-    // brandName: string,
-    modelName: string,
-    size: string,
-  ) {
+  static async findId(manufacturerName: string, modelName: string, size: string) {
     const tyre = await tyreDetailsRepository.findOne({
-      where: {
-        manufacturerName,
-        // brandName,
-        modelName,
-        size,
-      },
-      select: {
-        id: true,
-      },
+      where: { manufacturerName, modelName, size },
+      select: { id: true },
     });
 
-    return tyre?.id || null;
+    return tyre?.id ?? null;
   }
 
   static async addImageUrlInDatabase(id: number, imageUrl: string) {
-    const updateResult = await tyreDetailsRepository.update(id, {
-      imageUrl,
-    });
-
-    return updateResult.affected ? updateResult.affected > 0 : false;
+    const updateResult = await tyreDetailsRepository.update(id, { imageUrl });
+    return (updateResult.affected ?? 0) > 0;
   }
 
-  static async getTyreCardImage(
-    manufacturerName?: string,
-    modelName?: string,
-    size?: string,
-    brandName?: string,
-    category?: string,
-  ) {
-    console.log("category in repo:", category);
-    const queryBuilder = tyreDetailsRepository.createQueryBuilder("td");
+  static async getTyreCardImage(filters: TyreFilters) {
+    const { manufacturerName, modelName, size, brandName, category } = filters;
+    const limit = filters.limit ?? 200;
+    const offset = filters.offset ?? 0;
+
+    const qb = tyreDetailsRepository.createQueryBuilder("td");
 
     if (manufacturerName) {
-      queryBuilder.andWhere("td.manufacturer_name = :manufacturerName", {
-        manufacturerName,
-      });
+      qb.andWhere("td.manufacturer_name = :manufacturerName", { manufacturerName });
     }
-
     if (modelName) {
-      queryBuilder.andWhere("td.model_name = :modelName", { modelName });
+      qb.andWhere("td.model_name = :modelName", { modelName });
     }
-
     if (size) {
-      queryBuilder.andWhere("td.size = :size", { size });
+      qb.andWhere("td.size = :size", { size });
     }
     if (brandName) {
-      queryBuilder.andWhere("td.brand_name = :brandName", { brandName });
+      qb.andWhere("td.brand_name = :brandName", { brandName });
     }
-
     if (category) {
-      queryBuilder.andWhere("td.category = :category", { category });
+      qb.andWhere("td.category = :category", { category });
     }
 
-    const result = await queryBuilder.getMany();
+    const [rows, total] = await qb
+      .orderBy("td.manufacturer_name", "ASC")
+      .addOrderBy("td.model_name", "ASC")
+      .skip(offset)
+      .take(limit)
+      .getManyAndCount();
 
-    return result;
+    return { rows, total };
   }
 
-  // ✅ Get Manufacturers
-  static async getManufacturers() {
+  static async getManufacturers(): Promise<string[]> {
     const manufacturers = await tyreDetailsRepository
       .createQueryBuilder("td")
       .select("DISTINCT td.manufacturer_name", "manufacturer_name")
       .orderBy("td.manufacturer_name", "ASC")
-      .getRawMany();
+      .getRawMany<{ manufacturer_name: string }>();
 
     return manufacturers.map((m) => m.manufacturer_name);
   }
 
-  static async getModelNames(manufacturerName: string) {
+  static async getModelNames(manufacturerName: string): Promise<string[]> {
     const modelNames = await tyreDetailsRepository
       .createQueryBuilder("td")
       .select("DISTINCT td.model_name", "model_name")
       .where("td.manufacturer_name = :manufacturerName", { manufacturerName })
       .orderBy("td.model_name", "ASC")
-      .getRawMany();
+      .getRawMany<{ model_name: string }>();
 
     return modelNames.map((m) => m.model_name);
   }
 
-  static async getSize(manufacturerName: string, modelName: string) {
+  static async getSize(manufacturerName: string, modelName: string): Promise<string[]> {
     const sizes = await tyreDetailsRepository
       .createQueryBuilder("td")
       .select("DISTINCT td.size", "size")
-      .where(
-        "td.manufacturer_name = :manufacturerName AND td.model_name = :modelName",
-        { manufacturerName, modelName },
-      )
+      .where("td.manufacturer_name = :manufacturerName AND td.model_name = :modelName", {
+        manufacturerName,
+        modelName,
+      })
       .orderBy("td.size", "ASC")
-      .getRawMany();
+      .getRawMany<{ size: string }>();
 
     return sizes.map((s) => s.size);
   }
 
-  static async getbrandNames(manufacturerName?: string) {
-    const queryBuilder = tyreDetailsRepository
+  static async getbrandNames(manufacturerName?: string): Promise<string[]> {
+    const qb = tyreDetailsRepository
       .createQueryBuilder("td")
-      .select("DISTINCT td.brand_name", "brand_name");
+      .select("DISTINCT td.brand_name", "brand_name")
+      .where("td.brand_name IS NOT NULL AND td.brand_name <> ''");
 
     if (manufacturerName) {
-      queryBuilder.where("td.manufacturer_name = :manufacturerName", {
-        manufacturerName,
-      });
+      qb.andWhere("td.manufacturer_name = :manufacturerName", { manufacturerName });
     }
 
-    const brands = await queryBuilder.getRawMany();
+    const brands = await qb
+      .orderBy("td.brand_name", "ASC")
+      .getRawMany<{ brand_name: string }>();
 
     return brands.map((b) => b.brand_name);
   }
 
-  //  Send Customer Inquiry Email to Admin
-  static async sendEmailToAdmin(contactNo: string): Promise<boolean> {
+  static async sendEmailToAdmin(inquiry: CustomerInquiry): Promise<boolean> {
     try {
-      const emailSent = await sendCustomerInquiryEmailToAdmin(contactNo);
-      return emailSent;
+      return await sendCustomerInquiryEmailToAdmin(inquiry);
     } catch (error) {
-      console.error("Error in sendEmailToAdmin:", error);
+      logger.error(`sendEmailToAdmin failed: ${(error as Error).message}`);
       return false;
     }
   }

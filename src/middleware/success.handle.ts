@@ -1,25 +1,37 @@
 import { Request, Response } from "express";
 
 // Success response utility
-function sendSuccessResponse<T>(req: Request, res: Response, data: T) {
-  const response = {
-    status: 200,
-    data: data,
+function sendSuccessResponse<T>(
+  _req: Request,
+  res: Response,
+  data: T,
+  statusCode = 200,
+) {
+  return res.status(statusCode).json({
+    status: statusCode,
+    data,
     error: null,
-  };
-
-  return res.status(200).json(response);
+  });
 }
 
 export default sendSuccessResponse;
 
-// Define an error response function
-export function sendErrorResponse(req: Request, res: Response, error: any) {
-  const response = {
-    status: 404,
-    data: null,
-    error: error?.message || "Internal Server Error",
-  };
+/**
+ * Error response utility.
+ * Defaults to 400 (bad request). Pass an explicit code for 404 / 409 / 502 etc.
+ */
+export function sendErrorResponse(
+  _req: Request,
+  res: Response,
+  error: { message?: string } | string | null | undefined,
+  statusCode = 400,
+) {
+  const message =
+    typeof error === "string" ? error : error?.message || "Something went wrong";
 
-  return res.status(404).json(response);
+  return res.status(statusCode).json({
+    status: statusCode,
+    data: null,
+    error: message,
+  });
 }

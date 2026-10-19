@@ -1,23 +1,17 @@
-import nodemailer from "nodemailer";
+/**
+ * @deprecated Kept only so old imports keep compiling.
+ * Use `sendNewLeadEmailToAdmin` from `service/email/email.service` instead,
+ * which reads the recipient from ADMIN_EMAIL instead of a hardcoded address.
+ */
+import { sendNewLeadEmailToAdmin } from "../service/email/email.service";
 
-export const sendUserEmail = async (user: any) => {
-    const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS, // app password
-        },
-    });
-
-    await transporter.sendMail({
-        from: process.env.EMAIL_USER,
-        to: "ishupraja124421@gmail.com", // 👈 YOUR EMAIL (owner)
-        subject: "New Customer Inquiry 🚗",
-        html: `
-      <h3>New Lead Received</h3>
-      <p><b>Name:</b> ${user.FullName}</p>
-      <p><b>Phone:</b> ${user.contactNumber}</p>
-      <p><b>Email:</b> ${user.email}</p>
-    `,
-    });
-};
+export const sendUserEmail = async (user: {
+  FullName?: string | null;
+  email?: string | null;
+  contactNumber?: string | null;
+}) =>
+  sendNewLeadEmailToAdmin({
+    fullName: user.FullName,
+    email: user.email,
+    contactNumber: user.contactNumber,
+  });

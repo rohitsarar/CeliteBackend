@@ -1,8 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 import {
-  addNameSchema,
-  AddtyreAndGetCardImagesSchema,
+  attachImageSchema,
+  createTyreWithImageSchema,
+  CustomerInquiry,
   getbrandNamesSchema,
+  getModelsSchema,
   getSizeSchema,
   GettyreCardImagesSchema,
   postEmailToAdminSchema,
@@ -12,6 +14,9 @@ import sendSuccessResponse, {
   sendErrorResponse,
 } from "../../middleware/success.handle";
 import { uploadBufferToCloudinary } from "../../service/cloudinary.service";
+import ApiError from "../../utils/api-error";
+
+const VALIDATE_OPTS = { abortEarly: false, stripUnknown: true } as const;
 
 /** Converts "Apollo Tyres" → "apollo_tyres" (safe for Cloudinary paths). */
 function slugify(value: string): string {
@@ -22,162 +27,131 @@ function slugify(value: string): string {
     .replace(/^_+|_+$/g, "");
 }
 
+const requireFile = (req: Request) => {
+  if (!req.file) {
+    throw ApiError.customError(
+      400,
+      "Image file is required. Send it as multipart/form-data with field name 'image'.",
+    );
+  }
+  return req.file;
+};
+
 export default class TyreController {
+  /** Admin: create a tyre row and upload its card image in one call. */
   static async addTyreCardImageWithAllFields(
     req: Request,
     res: Response,
     next: NextFunction,
   ) {
     try {
-      // ── 1. Ensure a file was attached ────────────────────────────────────
-      if (!req.file) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Image file is required. Send it as multipart/form-data with field name 'image'.",
-        });
-      }
+      const file = requireFile(req);
 
-      const { manufacturerName, brandName, modelName, size } =
-        await AddtyreAndGetCardImagesSchema.validateAsync(req.body, {
-          abortEarly: false, // collect ALL validation errors at once
-          stripUnknown: true,
-        });
+      const { manufacturerName, brandName, modelName, size, category } =
+        await createTyreWithImageSchema.validateAsync(req.body, VALIDATE_OPTS);
 
       const folder = [
         "tyres",
         slugify(manufacturerName),
-        slugify(brandName),
+        brandName ? slugify(brandName) : null,
         slugify(modelName),
-      ].join("/");
+      ]
+        .filter(Boolean)
+        .join("/");
 
-      const publicId = slugify(size);
-
-      // ── 4. Upload buffer → Cloudinary ────────────────────────────────────
       const uploaded = await uploadBufferToCloudinary(
-        req.file.buffer,
+        file.buffer,
         folder,
-        publicId,
+        slugify(size),
       );
 
-      const result = await TyreDetailsRepository.createTyreCardImageWithName(
+      const result = await TyreDetailsRepository.createTyreCardImageWithName({
         manufacturerName,
-        brandName,
+        brandName: brandName || null,
         modelName,
         size,
-        uploaded.secureUrl,
-      );
+        category,
+        imageUrl: uploaded.secureUrl,
+      });
 
-      if (!result) {
-        return res.status(400).json({
-          success: false,
-          message: "Failed to add tyre details",
-        });
-      }
-
-      // ── 6. Respond ───────────────────────────────────────────────────────
-      sendSuccessResponse(req, res, {
-        message: "Tyre card image uploaded and details saved successfully.",
-        result: {
-          ...result,
-          image: {
-            url: uploaded.secureUrl,
-            publicId: uploaded.publicId,
-            width: uploaded.width,
-            height: uploaded.height,
-            format: uploaded.format,
-            sizeBytes: uploaded.bytes,
+      return sendSuccessResponse(
+        req,
+        res,
+        {
+          message: "Tyre card image uploaded and details saved successfully.",
+          result: {
+            ...result,
+            image: {
+              url: uploaded.secureUrl,
+              publicId: uploaded.publicId,
+              width: uploaded.width,
+              height: uploaded.height,
+              format: uploaded.format,
+              sizeBytes: uploaded.bytes,
+            },
           },
         },
-      });
+        201,
+      );
     } catch (error) {
       next(error);
     }
   }
 
-  // add image in cloudinary and save url in database
+  /** Admin: upload an image for a tyre row that already exists. */
   static async addImageInCloudinary(
     req: Request,
     res: Response,
     next: NextFunction,
   ) {
     try {
-      // 1. Ensure file exists
-      if (!req.file) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Image file is required. Send it as multipart/form-data with field name 'image'.",
-        });
-      }
+      const file = requireFile(req);
 
-      // 2. Validate body
       const { manufacturerName, modelName, size } =
-        await AddtyreAndGetCardImagesSchema.validateAsync(req.body, {
-          abortEarly: false,
-          stripUnknown: true,
-        });
+        await attachImageSchema.validateAsync(req.body, VALIDATE_OPTS);
 
-      // 3. Cloudinary folder
-      const folder = [
-        "tyres",
-        slugify(manufacturerName),
-        // slugify(brandName),
-        slugify(modelName),
-      ].join("/");
-
-      const publicId = slugify(size);
-
-      // 4. Upload image to cloudinary
-      const uploaded = await uploadBufferToCloudinary(
-        req.file.buffer,
-        folder,
-        publicId,
-      );
-
-      // 5. Find tyre id from database
+      // Look the row up first so we do not spend a Cloudinary upload on a miss.
       const tyreId = await TyreDetailsRepository.findId(
         manufacturerName,
-        // brandName,
         modelName,
         size,
       );
 
       if (!tyreId) {
-        sendErrorResponse(req, res, {
-          message: "Tyre details not found for the provided fields",
-        });
-        return;
-      }
-
-      // 6. ave image url in database
-      const addImageUrlInDatabase =
-        await TyreDetailsRepository.addImageUrlInDatabase(
-          tyreId,
-          uploaded.secureUrl,
+        return sendErrorResponse(
+          req,
+          res,
+          "Tyre details not found for the provided fields",
+          404,
         );
-
-      if (!addImageUrlInDatabase) {
-        sendErrorResponse(req, res, {
-          message: "Failed to add image url in database",
-        });
-        return;
       }
 
-      // 7. Success response
-      sendSuccessResponse(req, res, {
+      const folder = ["tyres", slugify(manufacturerName), slugify(modelName)].join("/");
+
+      const uploaded = await uploadBufferToCloudinary(
+        file.buffer,
+        folder,
+        slugify(size),
+      );
+
+      const updated = await TyreDetailsRepository.addImageUrlInDatabase(
+        tyreId,
+        uploaded.secureUrl,
+      );
+
+      if (!updated) {
+        return sendErrorResponse(req, res, "Failed to save image URL", 500);
+      }
+
+      return sendSuccessResponse(req, res, {
         message: "Tyre image uploaded successfully",
-        data: {
-          tyreId,
-          imageUrl: uploaded.secureUrl,
-        },
+        data: { tyreId, imageUrl: uploaded.secureUrl },
       });
     } catch (error) {
       next(error);
     }
   }
 
-  //get all manufacturers api
   static async getManufacturers(
     req: Request,
     res: Response,
@@ -185,7 +159,7 @@ export default class TyreController {
   ) {
     try {
       const data = await TyreDetailsRepository.getManufacturers();
-      sendSuccessResponse(req, res, {
+      return sendSuccessResponse(req, res, {
         message: "Manufacturers retrieved successfully",
         data,
       });
@@ -194,13 +168,14 @@ export default class TyreController {
     }
   }
 
-  //get all modelNames api
   static async getModelNames(req: Request, res: Response, next: NextFunction) {
     try {
-      const { manufacturerName } =
-        await AddtyreAndGetCardImagesSchema.validateAsync(req.query);
+      const { manufacturerName } = await getModelsSchema.validateAsync(
+        req.query,
+        VALIDATE_OPTS,
+      );
       const data = await TyreDetailsRepository.getModelNames(manufacturerName);
-      sendSuccessResponse(req, res, {
+      return sendSuccessResponse(req, res, {
         message: "Model names retrieved successfully",
         data,
       });
@@ -209,17 +184,14 @@ export default class TyreController {
     }
   }
 
-  //get all size api
   static async getSize(req: Request, res: Response, next: NextFunction) {
     try {
       const { manufacturerName, modelName } = await getSizeSchema.validateAsync(
         req.query,
+        VALIDATE_OPTS,
       );
-      const data = await TyreDetailsRepository.getSize(
-        manufacturerName,
-        modelName,
-      );
-      sendSuccessResponse(req, res, {
+      const data = await TyreDetailsRepository.getSize(manufacturerName, modelName);
+      return sendSuccessResponse(req, res, {
         message: "Sizes retrieved successfully",
         data,
       });
@@ -232,9 +204,10 @@ export default class TyreController {
     try {
       const { manufacturerName } = await getbrandNamesSchema.validateAsync(
         req.query,
+        VALIDATE_OPTS,
       );
       const data = await TyreDetailsRepository.getbrandNames(manufacturerName);
-      sendSuccessResponse(req, res, {
+      return sendSuccessResponse(req, res, {
         message: "Brand names retrieved successfully",
         data,
       });
@@ -249,54 +222,49 @@ export default class TyreController {
     next: NextFunction,
   ) {
     try {
-      const { manufacturerName, modelName, size, brandName, category } =
-        await GettyreCardImagesSchema.validateAsync(req.query, {
-          abortEarly: false,
-          stripUnknown: true,
-        });
-
-      const data = await TyreDetailsRepository.getTyreCardImage(
-        manufacturerName,
-        modelName,
-        size,
-        brandName,
-        category,
+      const filters = await GettyreCardImagesSchema.validateAsync(
+        req.query,
+        VALIDATE_OPTS,
       );
 
-      sendSuccessResponse(req, res, {
-        message: "Tyre card image retrieved successfully",
-        data,
+      const { rows, total } = await TyreDetailsRepository.getTyreCardImage(filters);
+
+      return sendSuccessResponse(req, res, {
+        message: "Tyre card images retrieved successfully",
+        data: rows,
+        total,
+        limit: filters.limit,
+        offset: filters.offset,
       });
     } catch (error) {
       next(error);
     }
   }
 
+  /** Public: a customer left their contact details, notify the admin. */
   static async postUserDetailsToAdminEmail(
     req: Request,
     res: Response,
     next: NextFunction,
   ) {
     try {
-      const { contactNo } = await postEmailToAdminSchema.validateAsync(
+      const inquiry: CustomerInquiry = await postEmailToAdminSchema.validateAsync(
         req.body,
-        {
-          abortEarly: false,
-          stripUnknown: true,
-        },
+        VALIDATE_OPTS,
       );
 
-      // Send email to admin with customer contact details
-      const emailSent = await TyreDetailsRepository.sendEmailToAdmin(contactNo);
+      const emailSent = await TyreDetailsRepository.sendEmailToAdmin(inquiry);
 
       if (!emailSent) {
-        return sendErrorResponse(req, res, {
-          message:
-            "Failed to send inquiry. Please try again later or contact support.",
-        });
+        return sendErrorResponse(
+          req,
+          res,
+          "Failed to send inquiry. Please try again later or contact us on WhatsApp.",
+          502,
+        );
       }
 
-      sendSuccessResponse(req, res, {
+      return sendSuccessResponse(req, res, {
         message:
           "Thank you for providing your contact details! Our team will reach out to you shortly.",
         data: {

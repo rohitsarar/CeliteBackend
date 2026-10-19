@@ -9,41 +9,32 @@ import { User } from "./features/user/user.model";
 // Load the .env file
 dotenv.config();
 
-// Get the current filename and extension for migration location
-const currentFilename = __filename;
-const fileExtension = path.extname(currentFilename);
-const migrationLocation = fileExtension === ".ts" ? "./src/migration/*.ts" : "";
+// When running from ts-node we are in ./src, when running the compiled build we
+// are in ./dist. Point the migration glob at the right folder for either case.
+const isTs = path.extname(__filename) === ".ts";
+const migrationLocation = isTs
+  ? path.join(__dirname, "migration", "*.ts")
+  : path.join(__dirname, "migration", "*.js");
 
-// rohit db
-// export const AppDataSource = new DataSource({
-//   type: "mysql",
-//   driver: mysql,
-//   host: process.env.DB_HOST || "localhost",
-//   port: Number(process.env.DB_PORT) || 3306,
-//   username: process.env.DB_USER || "root",
-//   password: process.env.DB_PASSWORD || "root",
-//   database: process.env.DB_NAME || "osm",
-//   synchronize: false,
-//   logging: false,
-//   entities: [User, TyreDetails],
-//   migrationsTableName: "migration_table",
-//   migrations: [migrationLocation],
-//   subscribers: [],
-// });
-
-// nishu db
 export const AppDataSource = new DataSource({
   type: "mysql",
   driver: mysql,
   host: process.env.DB_HOST || "localhost",
   port: Number(process.env.DB_PORT) || 3306,
   username: process.env.DB_USER || "root",
-  password: process.env.DB_PASSWORD || "P@ssw0rd",
+  // No hardcoded fallback password: production must supply DB_PASSWORD.
+  password: process.env.DB_PASSWORD ?? "",
   database: process.env.DB_NAME || "celiteTyreDB",
   synchronize: false,
-  logging: false,
+  logging: process.env.DB_LOGGING === "true",
   entities: [User, TyreDetails],
   migrationsTableName: "migration_table",
   migrations: [migrationLocation],
   subscribers: [],
+  // Keep the pool healthy behind a reverse proxy / long idle periods
+  extra: {
+    connectionLimit: Number(process.env.DB_POOL_SIZE) || 10,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 10_000,
+  },
 });

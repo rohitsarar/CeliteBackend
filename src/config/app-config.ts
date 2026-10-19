@@ -1,58 +1,107 @@
-import express, { Express } from 'express';
-import cors from 'cors';
+import express, { Express, Request, Response } from "express";
+import cors from "cors";
+import helmet from "helmet";
+import * as Sentry from "@sentry/node";
 import logger from "../utils/winston";
-import { basicLoggerMiddleware, detailedAccessLoggerMiddleware } from '../middleware/morgan';
-import routesV1 from '../features/index-router';
-import  errorHandlingMiddleWare  from '../middleware/error-handler';
-import { IApiErrors } from '../types/error';
-//import { nodeProfilingIntegration } from "@sentry/profiling-node";
-import * as Sentry from '@sentry/node';
+import {
+  basicLoggerMiddleware,
+  detailedAccessLoggerMiddleware,
+} from "../middleware/morgan";
+import routesV1 from "../features/index-router";
+import errorHandlingMiddleWare from "../middleware/error-handler";
 
+const isProduction = process.env.NODE_ENV === "production";
+
+/**
+ * Build the CORS origin list from env.
+ *   CORS_ORIGIN=https://celitetyre.com,https://www.celitetyre.com
+ * Falls back to "*" when not set so local development keeps working.
+ */
+const resolveCorsOrigin = (): cors.CorsOptions["origin"] => {
+  const raw = process.env.CORS_ORIGIN?.trim();
+  if (!raw || raw === "*") return "*";
+  const list = raw
+    .split(",")
+    .map((o) => o.trim())
+    .filter(Boolean);
+  return list.length === 1 ? list[0] : list;
+};
 
 const configureApp = (app: Express) => {
-    Sentry.init({
-        dsn: process.env.NODE_ENV === 'production' ? "https://1fd06917ceeaab69f9d5d74b8084dc51@o4507089922621440.ingest.de.sentry.io/4507089924718672" : '',
-        integrations: [
-            // enable HTTP calls tracing
-            new Sentry.Integrations.Http({ tracing: true }),
-            // enable Express.js middleware tracing
-            new Sentry.Integrations.Express({ app }),
-            //nodeProfilingIntegration(),
-        ],
-        // Performance Monitoring
-        tracesSampleRate: 1.0, //  Capture 100% of the transactions
-        // Set sampling rate for profiling - this is relative to tracesSampleRate
-        profilesSampleRate: 1.0,
-    });
+  // ── Sentry (only when a DSN is configured and we are in production) ─────
+  const sentryDsn = process.env.SENTRY_DSN;
+  const sentryEnabled = Boolean(sentryDsn) && isProduction;
 
-    app.use(basicLoggerMiddleware);
-    app.use(detailedAccessLoggerMiddleware);
-     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-     // @ts-ignore
-    app.use((req,res,next)=> {Sentry.setUser({ email:req.user? req.user.email : 'unauthenticated'  }),next()})
-    // Sentry.setUser({ email: "john.doe@example.com" });
-    // The request handler must be the first middleware on the app
-    if (process.env.NODE_ENV === 'production') app.use(Sentry.Handlers.requestHandler());
-    // TracingHandler creates a trace for every incoming request
-    if (process.env.NODE_ENV === 'production') app.use(Sentry.Handlers.tracingHandler());
-    app.use(cors({ origin: '*' }));
-    app.use(express.json({limit:'200mb'}));
-    app.use(express.urlencoded({ extended: true,limit:'200mb' }));
-    // app.use(redisSession);
-    // app.use(keycloak.middleware()); // Keycloak Middleware
-    // app.use(activityLogger)
-    app.get('/', (req, res) => res.send('Express + TypeScript Server'));
-    app.use('/v1', routesV1); // V1 Routes
-    // The error handler must be registered before any other error middleware and after all controllers
-    if (process.env.NODE_ENV === 'production') app.use(Sentry.Handlers.errorHandler());
-    app.use(errorHandlingMiddleWare);
-    logger.info('Express configured');
-    app.use((req, res) => {
-    res.status(404).json({
-        status: 404,
-        error: "Route not found"
+  if (sentryEnabled) {
+    Sentry.init({
+      dsn: sentryDsn,
+      environment: process.env.NODE_ENV,
+      integrations: [
+        new Sentry.Integrations.Http({ tracing: true }),
+        new Sentry.Integrations.Express({ app }),
+      ],
+      tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE) || 0.2,
     });
-});
+    app.use(Sentry.Handlers.requestHandler());
+    app.use(Sentry.Handlers.tracingHandler());
+  }
+
+  // ── Behind nginx / a load balancer, trust the first proxy so req.ip and
+  //    the rate limiter see the real client address.
+  if (process.env.TRUST_PROXY === "true") {
+    app.set("trust proxy", 1);
+  }
+
+  // ── Security headers ────────────────────────────────────────────────────
+  app.use(
+    helmet({
+      // This API only serves JSON, so CSP is not relevant.
+      contentSecurityPolicy: false,
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+    }),
+  );
+
+  // ── Logging ─────────────────────────────────────────────────────────────
+  app.use(basicLoggerMiddleware);
+  if (process.env.DETAILED_ACCESS_LOG !== "false") {
+    app.use(detailedAccessLoggerMiddleware);
+  }
+
+  // ── CORS + body parsing ─────────────────────────────────────────────────
+  app.use(
+    cors({
+      origin: resolveCorsOrigin(),
+      methods: ["GET", "POST", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization", "x-api-key"],
+    }),
+  );
+  const bodyLimit = process.env.BODY_LIMIT || "1mb";
+  app.use(express.json({ limit: bodyLimit }));
+  app.use(express.urlencoded({ extended: true, limit: bodyLimit }));
+
+  // ── Health check (for load balancers / uptime monitors) ─────────────────
+  app.get("/", (_req: Request, res: Response) => res.send("CELITE Tyre API"));
+  app.get("/health", (_req: Request, res: Response) =>
+    res.status(200).json({
+      status: "ok",
+      uptime: Math.round(process.uptime()),
+      timestamp: new Date().toISOString(),
+    }),
+  );
+
+  // ── Routes ──────────────────────────────────────────────────────────────
+  app.use("/v1", routesV1);
+
+  // ── 404 for anything unmatched (must come before the error handler) ─────
+  app.use((_req: Request, res: Response) => {
+    res.status(404).json({ status: 404, data: null, error: "Route not found" });
+  });
+
+  // ── Error handlers ──────────────────────────────────────────────────────
+  if (sentryEnabled) app.use(Sentry.Handlers.errorHandler());
+  app.use(errorHandlingMiddleWare);
+
+  logger.info("Express configured");
 };
 
 export default configureApp;

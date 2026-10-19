@@ -1,46 +1,50 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-import fs from 'fs';
-import path from 'path';
-import morgan, { StreamOptions } from 'morgan';
-import logger from '../utils/winston';
+import fs from "fs";
+import path from "path";
+import morgan, { StreamOptions } from "morgan";
+import logger, { LOG_DIR } from "../utils/winston";
 
-// Create a write stream for the access log file
-const accessLogStream = fs.createWriteStream(path.join(process.cwd(), 'logs', 'access.log'), { flags: 'a' });
+// Make sure the log folder exists before opening the stream, otherwise a fresh
+// deployment (where logs/ is git-ignored) crashes on startup with ENOENT.
+fs.mkdirSync(LOG_DIR, { recursive: true });
 
-// Create a StreamOptions for the access log
+const accessLogStream = fs.createWriteStream(path.join(LOG_DIR, "access.log"), {
+  flags: "a",
+});
+accessLogStream.on("error", (err) =>
+  logger.error(`access.log write failed: ${err.message}`),
+);
+
 const accessLogStreamOptions: StreamOptions = {
-    write: (message) => accessLogStream.write(`${message}\n`),
+  write: (message) => {
+    accessLogStream.write(message);
+  },
 };
 
-// Create the morgan middleware for basic logging to Winston
-const basicLoggerMiddleware = morgan((tokens, req, res) => {
-    // @ts-ignore
-    const user = req.user ? `${req.user.email}/${req.user.role}` : 'unauthenticated';
-    // @ts-ignore
-    const ip = req.ip || req.connection.remoteAddress || '-';
-    // @ts-ignore
-    const mac = req.mac || '-';
+type MorganReq = Parameters<morgan.FormatFn>[1];
 
-    const logMessage = `${user} - ${tokens.method(req, res)} ${tokens.url(req, res)} ${tokens.status(req, res)} ${tokens.res(req, res, 'content-length')} - ${tokens['response-time'](req, res)} ms ip: ${ip} mac: ${mac}`;
+const clientIp = (req: MorganReq) =>
+  (req as MorganReq & { ip?: string }).ip || req.socket?.remoteAddress || "-";
 
-    return logMessage;
-}, { stream: { write: (message) => logger.http(message) } }); // Using Winston Logger http severity
+// Basic request line → Winston (console + all.log)
+const basicLoggerMiddleware = morgan(
+  (tokens, req, res) =>
+    `${tokens.method(req, res)} ${tokens.url(req, res)} ${tokens.status(req, res)} ` +
+    `${tokens.res(req, res, "content-length") || "-"} - ${tokens["response-time"](req, res)} ms ` +
+    `ip: ${clientIp(req)}`,
+  { stream: { write: (message) => logger.http(message.trim()) } },
+);
 
-// Create the morgan middleware for detailed logging to the access log file
-const detailedAccessLoggerMiddleware = morgan((tokens, req, res) => {
-    // @ts-ignore
-    const user = req.user ? `${req.user.email}/${req.user.role}` : 'unauthenticated';
-    // @ts-ignore
-    const ip = req.ip || req.connection.remoteAddress || '-';
-    // @ts-ignore
-    const mac = req.mac || '-';
-
-    const requestHeaders = JSON.stringify(req.headers);
-    const requestBody = JSON.stringify(tokens.body);
-
-    const logMessage = `${user} - ${tokens.method(req, res)} ${tokens.url(req, res)} ${tokens.status(req, res)} ${tokens.res(req, res, 'content-length')} - ${tokens['response-time'](req, res)} ms ip: ${ip} mac: ${mac} headers: ${requestHeaders} body: ${requestBody}`;
-
-    return logMessage;
-}, { stream: accessLogStreamOptions });
+// Detailed request line → logs/access.log.
+// Only a few safe headers are logged (never the body or auth headers) so
+// customer phone numbers and e-mails do not end up on disk in plain text.
+const detailedAccessLoggerMiddleware = morgan(
+  (tokens, req, res) =>
+    `${tokens.date(req, res, "iso")} ${tokens.method(req, res)} ${tokens.url(req, res)} ` +
+    `${tokens.status(req, res)} ${tokens.res(req, res, "content-length") || "-"} - ` +
+    `${tokens["response-time"](req, res)} ms ip: ${clientIp(req)} ` +
+    `ua: ${JSON.stringify(req.headers["user-agent"] || "-")} ` +
+    `referer: ${req.headers.referer || "-"}\n`,
+  { stream: accessLogStreamOptions },
+);
 
 export { basicLoggerMiddleware, detailedAccessLoggerMiddleware };

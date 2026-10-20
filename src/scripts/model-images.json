@@ -1,0 +1,6 @@
+{
+  "_comment": "Manual image URLs per tyre model, used by `npm run images -- fill`. Key format: BRAND|Model name (must match brand_name and model_name in the database). Value: a direct https link to a .jpg/.png/.webp. The image is uploaded to Cloudinary once and applied to every size of that model.",
+  "PIRELLI|P Zero": "",
+  "PIRELLI|Scorpion Verde": "",
+  "PIRELLI|Cinturato C3": ""
+}

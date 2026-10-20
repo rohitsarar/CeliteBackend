@@ -19,6 +19,7 @@ const migrationLocation = isTs
 export const AppDataSource = new DataSource({
   type: "mysql",
   driver: mysql,
+  connectorPackage: "mysql2",
   host: process.env.DB_HOST || "localhost",
   port: Number(process.env.DB_PORT) || 3306,
   username: process.env.DB_USER || "root",

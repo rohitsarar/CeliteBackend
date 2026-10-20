@@ -66,7 +66,9 @@ export const GettyreCardImagesSchema = Joi.object({
   size: name.optional(),
   brandName: name.optional(),
   category: Joi.string().trim().uppercase().optional(),
-  limit: Joi.number().integer().min(1).max(200).default(200),
+  // The storefront loads a whole category at once, so the default must cover
+  // the full catalogue (currently ~400 rows). Raise if the catalogue grows.
+  limit: Joi.number().integer().min(1).max(2000).default(1000),
   offset: Joi.number().integer().min(0).default(0),
 });
 

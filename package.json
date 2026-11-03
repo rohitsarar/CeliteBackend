@@ -11,7 +11,8 @@
     "migration:revert": "ts-node ./node_modules/typeorm/cli.js migration:revert -d ./src/data-source.ts",
     "images": "ts-node src/scripts/images.ts",
     "import:excel": "ts-node src/scripts/import-excel.ts",
-    "dedupe": "ts-node src/scripts/dedupe.ts"
+    "dedupe": "ts-node src/scripts/dedupe.ts",
+    "images:variants": "ts-node src/scripts/image-variants.ts"
   },
   "dependencies": {
     "@sentry/node": "^7.120.4",

@@ -20,7 +20,8 @@ export type ImageCandidate = {
 };
 
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
-const MAX_BYTES = 5 * 1024 * 1024;
+// Pirelli's full-size product PNGs are up to ~10 MB; Cloudinary optimises them on upload.
+const MAX_BYTES = 12 * 1024 * 1024;
 const MIN_SIDE = 300;
 
 export const isSearchConfigured = () =>

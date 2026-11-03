@@ -1,0 +1,116 @@
+{
+  "_comment": "Official Pirelli product photos (3/4 view, side 'cake' view, front/tread view) per model, used by `npm run images:variants`. Key: BRAND|Model name as stored in the database. Each path is relative to _base. Rows of a model are spread across these images so neighbouring cards do not all show the same photo. Verified visually on 2026-11-03.",
+  "_base": "https://tyre24.pirelli.com/dynamic_engine/assets/",
+  "PIRELLI|P Zero": [
+    "visori/3_4/pzero.png",
+    "visori/3_4/pzeroPZ4.png",
+    "visori/cake/pzero.png",
+    "visori/cake/pzeroPZ4.png",
+    "global/Pirelli-Pzero-Cake-1505470072745.png",
+    "global/gallery-base-3-4-4505534470853.png",
+    "global/gallery-base-front-4505534470936.png",
+    "global/gallery-base-torta-4505534471039.png",
+    "global/pzero-vecchio-front-1505470066432.jpg",
+    "global/pzero-vecchio-torta-1505470066451.jpg",
+    "global/Pirelli-P-Zero-PZ4-off-low-03-1505470072707.png"
+  ],
+  "PIRELLI|P Zero Seal Inside": [
+    "visori/3_4/pzeroPZ4.png",
+    "visori/cake/pzeroPZ4.png",
+    "global/gallery-base-front-4505534470936.png",
+    "global/gallery-base-3-4-4505534470853.png",
+    "global/gallery-base-torta-4505534471039.png"
+  ],
+  "PIRELLI|P Zero PZ5": [
+    "visori/3_4/PZ5_visorePDP_3-4.png",
+    "visori/cake/PZ5_visorePDP_cake.png",
+    "global/PZ5_review_front.png",
+    "global/PZ5_review_3-4.png",
+    "global/PZ5_review_cake.png"
+  ],
+  "PIRELLI|P Zero E": [
+    "visori/3_4/pzeroe.png",
+    "visori/cake/pzeroe.png",
+    "global/PZEROE-gallery-front-4505535485568.jpg"
+  ],
+  "PIRELLI|P7 Cinturato": [
+    "visori/3_4/p7cint.png",
+    "visori/cake/p7cint.png",
+    "global/cinturato-P7-front-1505470083073.jpg",
+    "visori/3_4/p7cnt.png",
+    "global/cinturato-P7-torta-1505470083111.jpg",
+    "visori/cake/p7cnt.png",
+    "global/Cinturato-P7-P7C2-4505517104514.png"
+  ],
+  "PIRELLI|P7 Cinturato Seal Inside": [
+    "visori/3_4/p7cnt.png",
+    "visori/cake/p7cnt.png",
+    "global/cinturato-P7-front-1505470083073.jpg"
+  ],
+  "PIRELLI|Cinturato P7 Blue": [
+    "visori/3_4/p7blue.png",
+    "visori/cake/p7blue.png",
+    "global/cinturato-pt-blue-front-1505470074263.jpg",
+    "global/cinturato-p7-blue-torta-1505470074282.jpg"
+  ],
+  "PIRELLI|Cinturato C3": [
+    "visori/3_4/CinturatoC3_visorePDP_3-4.png",
+    "global/CinturatoC3_review_cake.png",
+    "global/CinturatoC3_review_front.png",
+    "global/CinturatoC3_review_3-4.png"
+  ],
+  "PIRELLI|Powergy": [
+    "visori/3_4/pwrgy.png",
+    "visori/cake/pwrgy.png",
+    "global/Powergy-gallery-base-front-4505522087002.jpg",
+    "global/Powergy-gallery-base-torta-4505522086901.jpg"
+  ],
+  "PIRELLI|Scorpion Verde": [
+    "visori/3_4/sverd.png",
+    "visori/cake/sverd.png",
+    "global/scorpion-verde-front-1505470074552.jpg",
+    "global/scorpion-verde-torta-1505470074514.jpg"
+  ],
+  "PIRELLI|Scorpion Verde Seal Inside": [
+    "visori/cake/sverd.png",
+    "global/scorpion-verde-front-1505470074552.jpg",
+    "visori/3_4/sverd.png"
+  ],
+  "PIRELLI|Scorpion Verde All Season": [
+    "visori/3_4/sveas.png",
+    "visori/cake/sveas.png",
+    "global/scorpion-verde-all-season-front-1505470075868.jpg",
+    "global/scorpion-verde-all-season-torta-1505470075887.jpg"
+  ],
+  "PIRELLI|Scorpion Zero All Season": [
+    "visori/3_4/szroas.png",
+    "visori/cake/szroas.png",
+    "global/Scorpion-Zero-All-Season-front-1505470086380.jpg",
+    "global/Scorpion-Zero-All-Season-torta-1505470086418.jpg"
+  ],
+  "PIRELLI|Scorpion Zero": [
+    "visori/3_4/szero.png",
+    "visori/cake/szero.png",
+    "global/Scorpion-Zero-Asimmetrico-front-1505470076153.jpg",
+    "global/Scorpion-Zero-Asimmetrico-torta-1505470076134.jpg"
+  ],
+  "PIRELLI|Scorpion": [
+    "visori/3_4/scorpn.png",
+    "visori/cake/scorpn.png",
+    "global/SC-Front-4505525112568.jpg",
+    "global/SC-Cake-4505525112499.jpg"
+  ],
+  "PIRELLI|Scorpion ATR": [
+    "visori/3_4/satr.png",
+    "visori/cake/satr.png",
+    "global/scorpion-ATR-front-1505470079533.jpg",
+    "global/scorpion-ATR-torta-1505470079970.jpg"
+  ],
+  "PIRELLI|Scorpion MS": [
+    "visori/3_4/scms.png",
+    "visori/cake/scms.png",
+    "global/gallery-base-front-4505534677457.png",
+    "global/gallery-base-3-4-4505534677673.png",
+    "global/gallery-base-cake-4505534677535.png"
+  ]
+}

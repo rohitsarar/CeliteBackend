@@ -1,18 +1,19 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
+/**
+ * Originally added a `type` column and DROPPED + re-created `size`, which
+ * wipes every tyre size and fails on a fresh database (the table does not
+ * exist yet). The entity never used `type`, so this is now a no-op.
+ * `tyre_details` is created by TyreDetailsColumns1792400000000.
+ */
 export class Init1779108957222 implements MigrationInterface {
-    name = 'Init1779108957222'
+  name = "Init1779108957222";
 
-    public async up(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`ALTER TABLE \`tyre_details\` ADD \`type\` varchar(50) NOT NULL`);
-        await queryRunner.query(`ALTER TABLE \`tyre_details\` DROP COLUMN \`size\``);
-        await queryRunner.query(`ALTER TABLE \`tyre_details\` ADD \`size\` varchar(255) NOT NULL`);
-    }
+  public async up(): Promise<void> {
+    // intentionally empty, see comment above
+  }
 
-    public async down(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`ALTER TABLE \`tyre_details\` DROP COLUMN \`size\``);
-        await queryRunner.query(`ALTER TABLE \`tyre_details\` ADD \`size\` varchar(50) NOT NULL`);
-        await queryRunner.query(`ALTER TABLE \`tyre_details\` DROP COLUMN \`type\``);
-    }
-
+  public async down(_queryRunner: QueryRunner): Promise<void> {
+    // intentionally empty
+  }
 }

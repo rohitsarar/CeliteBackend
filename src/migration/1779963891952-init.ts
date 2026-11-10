@@ -1,20 +1,22 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
+/**
+ * Creates the `user` (leads) table if it does not exist yet.
+ *
+ * The original version also added a `type` column and DROPPED + re-created
+ * `tyre_details.size`, which would wipe every tyre size. Those statements are
+ * removed; the entity never used `type`. Safe to run on an existing database.
+ */
 export class Init1779963891952 implements MigrationInterface {
-    name = 'Init1779963891952'
+  name = "Init1779963891952";
 
-    public async up(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`CREATE TABLE \`user\` (\`id\` int NOT NULL AUTO_INCREMENT, \`FullName\` varchar(255) NULL, \`contactNumber\` varchar(255) NULL, \`email\` varchar(255) NULL, \`lastUserSession\` varchar(255) NULL, \`createdAt\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updatedAt\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`ALTER TABLE \`tyre_details\` ADD \`type\` varchar(50) NOT NULL`);
-        await queryRunner.query(`ALTER TABLE \`tyre_details\` DROP COLUMN \`size\``);
-        await queryRunner.query(`ALTER TABLE \`tyre_details\` ADD \`size\` varchar(255) NOT NULL`);
-    }
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(
+      "CREATE TABLE IF NOT EXISTS `user` (`id` int NOT NULL AUTO_INCREMENT, `FullName` varchar(255) NULL, `contactNumber` varchar(255) NULL, `email` varchar(255) NULL, `lastUserSession` varchar(255) NULL, `createdAt` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), `updatedAt` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), PRIMARY KEY (`id`)) ENGINE=InnoDB",
+    );
+  }
 
-    public async down(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`ALTER TABLE \`tyre_details\` DROP COLUMN \`size\``);
-        await queryRunner.query(`ALTER TABLE \`tyre_details\` ADD \`size\` varchar(50) NOT NULL`);
-        await queryRunner.query(`ALTER TABLE \`tyre_details\` DROP COLUMN \`type\``);
-        await queryRunner.query(`DROP TABLE \`user\``);
-    }
-
+  public async down(): Promise<void> {
+    // Never drop the leads table automatically.
+  }
 }

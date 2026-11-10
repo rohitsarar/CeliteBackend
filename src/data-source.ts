@@ -31,6 +31,9 @@ export const AppDataSource = new DataSource({
   entities: [User, TyreDetails],
   migrationsTableName: "migration_table",
   migrations: [migrationLocation],
+  // On hosts without shell access to run `npm run migration:run` (e.g. Hostinger
+  // web apps), set RUN_MIGRATIONS=true so pending migrations run on startup.
+  migrationsRun: process.env.RUN_MIGRATIONS === "true",
   subscribers: [],
   // Keep the pool healthy behind a reverse proxy / long idle periods
   extra: {

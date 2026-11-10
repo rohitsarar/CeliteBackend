@@ -8,6 +8,22 @@ import configureApp from "./config/app-config";
 import logger from "./utils/winston";
 
 const port: number = Number(process.env.PORT) || 3302;
+
+// Warn loudly about settings that are easy to forget when going live.
+if (process.env.NODE_ENV === "production") {
+  const warnings: string[] = [];
+  if (!process.env.CORS_ORIGIN || process.env.CORS_ORIGIN.trim() === "*") {
+    warnings.push("CORS_ORIGIN is '*'; set it to the site's domain(s).");
+  }
+  if (process.env.TRUST_PROXY !== "true") {
+    warnings.push(
+      "TRUST_PROXY is not 'true'; behind a proxy all visitors share one IP and hit the rate limit together.",
+    );
+  }
+  if (!process.env.DB_PASSWORD) warnings.push("DB_PASSWORD is empty.");
+  if (!process.env.ADMIN_API_KEY) warnings.push("ADMIN_API_KEY is not set; admin uploads are disabled.");
+  warnings.forEach((w) => logger.warn(`[config] ${w}`));
+}
 const app: Express = express();
 
 // Load the middlewares, routes and error handlers

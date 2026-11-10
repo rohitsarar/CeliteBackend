@@ -71,7 +71,7 @@ const configureApp = (app: Express) => {
   app.use(
     cors({
       origin: resolveCorsOrigin(),
-      methods: ["GET", "POST", "OPTIONS"],
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization", "x-api-key"],
     }),
   );

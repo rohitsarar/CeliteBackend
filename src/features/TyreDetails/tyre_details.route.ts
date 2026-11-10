@@ -1,5 +1,6 @@
 import { Router } from "express";
 import TyreController from "./tyre_details.controller";
+import TyreAdminController from "./tyre_details.admin";
 import { uploadSingle } from "../../middleware/cloudinarry";
 import requireAdminKey from "../../middleware/admin-auth";
 import { apiLimiter, inquiryLimiter, uploadLimiter } from "../../middleware/rate-limit";
@@ -33,6 +34,16 @@ route.post(
   uploadSingle,
   TyreController.addImageInCloudinary,
 );
+
+// ─── Admin panel (catalogue management) ──────────────────────────────────────
+// Used by the website's /admin page through its server-side proxy.
+route.get("/admin/list", requireAdminKey, TyreAdminController.list);
+route.get("/admin/options", requireAdminKey, TyreAdminController.options);
+route.post("/admin/generate-content", requireAdminKey, TyreAdminController.generate);
+route.get("/admin/:id", requireAdminKey, TyreAdminController.get);
+route.post("/admin", requireAdminKey, uploadLimiter, uploadSingle, TyreAdminController.create);
+route.put("/admin/:id", requireAdminKey, uploadLimiter, uploadSingle, TyreAdminController.update);
+route.delete("/admin/:id", requireAdminKey, TyreAdminController.remove);
 
 // ─── Public (read) endpoints ─────────────────────────────────────────────────
 route.get("/get-card-images-details", apiLimiter, TyreController.getTyreCardImagesWithFilters);

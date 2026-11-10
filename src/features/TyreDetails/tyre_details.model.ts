@@ -25,6 +25,10 @@ export class TyreDetails {
   @Column({ name: "image_url", type: "text", nullable: true })
   imageUrl!: string;
 
+  /** false = hidden from the website (admin "Hide"); the row is kept. */
+  @Column({ name: "is_active", type: "boolean", default: true })
+  isActive!: boolean;
+
   // ── Product-page content (see tyre-content.ts). Not selected by default so
   //    the catalogue list stays small; the detail endpoint selects them.
   @Column({ name: "description", type: "text", nullable: true, select: false })

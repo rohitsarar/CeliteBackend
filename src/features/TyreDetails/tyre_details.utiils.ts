@@ -64,7 +64,9 @@ export default class TyreDetailsRepository {
     const limit = filters.limit ?? 200;
     const offset = filters.offset ?? 0;
 
-    const qb = tyreDetailsRepository.createQueryBuilder("td");
+    const qb = tyreDetailsRepository
+      .createQueryBuilder("td")
+      .where("td.is_active = :active", { active: true });
 
     if (manufacturerName) {
       qb.andWhere("td.manufacturer_name = :manufacturerName", { manufacturerName });
@@ -101,6 +103,7 @@ export default class TyreDetailsRepository {
       .createQueryBuilder("td")
       .addSelect(["td.description", "td.highlights", "td.specs"])
       .where("td.id = :id", { id })
+      .andWhere("td.is_active = :active", { active: true })
       .getOne();
 
     if (!tyre) return null;
@@ -119,6 +122,7 @@ export default class TyreDetailsRepository {
     const manufacturers = await tyreDetailsRepository
       .createQueryBuilder("td")
       .select("DISTINCT td.manufacturer_name", "manufacturer_name")
+      .where("td.is_active = :active", { active: true })
       .orderBy("td.manufacturer_name", "ASC")
       .getRawMany<{ manufacturer_name: string }>();
 
@@ -130,6 +134,7 @@ export default class TyreDetailsRepository {
       .createQueryBuilder("td")
       .select("DISTINCT td.model_name", "model_name")
       .where("td.manufacturer_name = :manufacturerName", { manufacturerName })
+      .andWhere("td.is_active = :active", { active: true })
       .orderBy("td.model_name", "ASC")
       .getRawMany<{ model_name: string }>();
 
@@ -144,6 +149,7 @@ export default class TyreDetailsRepository {
         manufacturerName,
         modelName,
       })
+      .andWhere("td.is_active = :active", { active: true })
       .orderBy("td.size", "ASC")
       .getRawMany<{ size: string }>();
 
@@ -154,7 +160,8 @@ export default class TyreDetailsRepository {
     const qb = tyreDetailsRepository
       .createQueryBuilder("td")
       .select("DISTINCT td.brand_name", "brand_name")
-      .where("td.brand_name IS NOT NULL AND td.brand_name <> ''");
+      .where("td.brand_name IS NOT NULL AND td.brand_name <> ''")
+      .andWhere("td.is_active = :active", { active: true });
 
     if (manufacturerName) {
       qb.andWhere("td.manufacturer_name = :manufacturerName", { manufacturerName });

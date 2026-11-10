@@ -59,6 +59,11 @@ export const getbrandNamesSchema = Joi.object({
   manufacturerName: name.optional(),
 });
 
+/** GET /tyres/details/:id */
+export const tyreIdSchema = Joi.object({
+  id: Joi.number().integer().min(1).required(),
+});
+
 /** GET /tyres/get-card-images-details — all filters optional. */
 export const GettyreCardImagesSchema = Joi.object({
   manufacturerName: name.optional(),

@@ -3,6 +3,7 @@ import { TyreDetails } from "./tyre_details.model";
 import { sendCustomerInquiryEmailToAdmin } from "../../service/email/email.service";
 import logger from "../../utils/winston";
 import { CustomerInquiry } from "./tyre_details.validator";
+import { buildTyreContent } from "./tyre-content";
 
 const tyreDetailsRepository = AppDataSource.getRepository(TyreDetails);
 
@@ -27,6 +28,8 @@ export type TyreFilters = {
 
 export default class TyreDetailsRepository {
   static async createTyreCardImageWithName(input: CreateTyreInput) {
+    // New rows get their product-page content straight away.
+    const content = buildTyreContent(input);
     const tyre = tyreDetailsRepository.create({
       manufacturerName: input.manufacturerName,
       modelName: input.modelName,
@@ -34,6 +37,9 @@ export default class TyreDetailsRepository {
       category: input.category,
       brandName: input.brandName ?? undefined,
       imageUrl: input.imageUrl ?? undefined,
+      description: content.description,
+      highlights: content.highlights,
+      specs: content.specs,
     });
 
     return tyreDetailsRepository.save(tyre);
@@ -84,6 +90,29 @@ export default class TyreDetailsRepository {
       .getManyAndCount();
 
     return { rows, total };
+  }
+
+  /**
+   * One tyre with its product-page content. Rows that were never filled by
+   * `npm run tyre-details` get the content generated on the fly.
+   */
+  static async getTyreById(id: number) {
+    const tyre = await tyreDetailsRepository
+      .createQueryBuilder("td")
+      .addSelect(["td.description", "td.highlights", "td.specs"])
+      .where("td.id = :id", { id })
+      .getOne();
+
+    if (!tyre) return null;
+
+    if (!tyre.description || !tyre.highlights?.length || !tyre.specs?.length) {
+      const content = buildTyreContent(tyre);
+      tyre.description = tyre.description || content.description;
+      tyre.highlights = tyre.highlights?.length ? tyre.highlights : content.highlights;
+      tyre.specs = tyre.specs?.length ? tyre.specs : content.specs;
+    }
+
+    return tyre;
   }
 
   static async getManufacturers(): Promise<string[]> {

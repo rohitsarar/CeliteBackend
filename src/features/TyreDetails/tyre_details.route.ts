@@ -40,6 +40,7 @@ route.get("/get-manufacturers", apiLimiter, TyreController.getManufacturers);
 route.get("/get-models", apiLimiter, TyreController.getModelNames);
 route.get("/get-sizes", apiLimiter, TyreController.getSize);
 route.get("/get-brands", apiLimiter, TyreController.getbrandNames);
+route.get("/details/:id", apiLimiter, TyreController.getTyreDetails);
 
 // ─── Public (e-mail) endpoint, strictly rate limited ─────────────────────────
 route.post("/customer-inquiry", inquiryLimiter, TyreController.postUserDetailsToAdminEmail);

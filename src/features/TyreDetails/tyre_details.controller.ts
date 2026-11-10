@@ -8,6 +8,7 @@ import {
   getSizeSchema,
   GettyreCardImagesSchema,
   postEmailToAdminSchema,
+  tyreIdSchema,
 } from "./tyre_details.validator";
 import TyreDetailsRepository from "./tyre_details.utiils";
 import sendSuccessResponse, {
@@ -146,6 +147,25 @@ export default class TyreController {
       return sendSuccessResponse(req, res, {
         message: "Tyre image uploaded successfully",
         data: { tyreId, imageUrl: uploaded.secureUrl },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /** Public: one tyre with description, highlights and specs (product page). */
+  static async getTyreDetails(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = await tyreIdSchema.validateAsync(req.params, VALIDATE_OPTS);
+      const tyre = await TyreDetailsRepository.getTyreById(id);
+
+      if (!tyre) {
+        return sendErrorResponse(req, res, "Tyre not found", 404);
+      }
+
+      return sendSuccessResponse(req, res, {
+        message: "Tyre details retrieved successfully",
+        data: tyre,
       });
     } catch (error) {
       next(error);

@@ -12,7 +12,8 @@
     "images": "ts-node src/scripts/images.ts",
     "import:excel": "ts-node src/scripts/import-excel.ts",
     "dedupe": "ts-node src/scripts/dedupe.ts",
-    "images:variants": "ts-node src/scripts/image-variants.ts"
+    "images:variants": "ts-node src/scripts/image-variants.ts",
+    "tyre-details": "ts-node src/scripts/tyre-details.ts"
   },
   "dependencies": {
     "@sentry/node": "^7.120.4",
